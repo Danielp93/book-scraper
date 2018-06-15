@@ -2,15 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import errno
+import re
+import sys
 
 
 def get_sections(url):
-    headers = {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/67.0.3396.87 Safari/537.36 ',
-    }
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url)
         if response.status_code == 200:
             content = response.content
             soup = BeautifulSoup(content, "html.parser")
@@ -34,22 +32,19 @@ def make_dir(path):
 
 
 def download_pdf(url, location):
-    headers = {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/67.0.3396.87 Safari/537.36 ',
-        's_pers': '%20s_cc%3Dtrue%3B%20s_sq%3D%3B',
-        's_sess': '%20s_cc%3Dtrue%3B%20s_sq%3D%3B'
-    }
-    response = requests.get(url, stream=True, headers=headers)
-    handle = open(location, 'wb+')
-    for chunk in response.iter_content(chunk_size=512):
-        if chunk:
-            handle.write(chunk)
+    try:
+        response = requests.get(url, stream=True)
+        handle = open(location, 'wb+')
+        for chunk in response.iter_content(chunk_size=512):
+            if chunk:
+                handle.write(chunk)
+    except Exception as e:
+        print(str(e))
 
 
-def get_books(startingpage):
-    for url in get_sections(startingpage):
-        dir = os.getcwd() + '\\' + url['id']
+def get_books(path):
+    for url in get_sections('https://www.oreilly.com/free/reports.html'):
+        dir = path + '\\' + url['id']
         url = "https://www.oreilly.com/" + url['id'] + "/free"
         for section in get_sections(url):
             for book in section.find_all('a'):
@@ -58,20 +53,23 @@ def get_books(startingpage):
                 if(not book['href'].startswith('http:')):
                     book['href'] = "http:" + book['href']
 
-
                 book['href'] = book['href'].replace('.csp', '.pdf').replace('/free/', '/free/files/')
-                book['title'] = book['title'].replace(' ', '_')\
-                                             .replace(':', '_')\
-                                             .replace('\'','')\
-                                             .replace('?','')\
-                                             .replace('/','')
+                book['title'] = re.sub('[^\\w\\s-]', '', book['title']).strip()
+                book['title'] = re.sub('[-\\s]+', '_', book['title'])
+
                 if section.has_attr('id'):
                     location = dir + '\\' + section['id']
                 else:
                     location = dir
                 make_dir(location)
                 location += '\\' + book['title'] + '.pdf'
-                print(book['href'] + ' : ' + location)
-                download_pdf(url, location)
+                download_pdf(book['href'], location)
 
-get_books('https://www.oreilly.com/free/reports.html')
+
+def main():
+    path = sys.argv[1]
+    make_dir(path)
+    get_books(path)
+
+if __name__ == "__main__":
+    main()
