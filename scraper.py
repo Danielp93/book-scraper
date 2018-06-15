@@ -8,8 +8,6 @@ def get_sections(url):
     headers = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                       'Chrome/67.0.3396.87 Safari/537.36 ',
-        's_pers' : '%20s_cc%3Dtrue%3B%20s_sq%3D%3B',
-        's_sess' : '%20s_cc%3Dtrue%3B%20s_sq%3D%3B'
     }
     try:
         response = requests.get(url, headers=headers)
