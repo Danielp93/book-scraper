@@ -18,6 +18,7 @@ def get_sections(url):
     finally:
         return sections
 
+
 def make_dir(path):
     try:
         os.makedirs(path, exist_ok=True)
@@ -44,23 +45,20 @@ def download_pdf(url, location):
 
 def get_books(path):
     for url in get_sections('https://www.oreilly.com/free/reports.html'):
-        dir = path + '\\' + url['id']
+        directory = path + '\\' + url['id']
         url = "https://www.oreilly.com/" + url['id'] + "/free"
         for section in get_sections(url):
             for book in section.find_all('a'):
 
-                #very specific usecase with first link, http is missing
-                if(not book['href'].startswith('http:')):
+                # very specific usecase with first link, http is missing
+                if not book['href'].startswith('http:'):
                     book['href'] = "http:" + book['href']
 
                 book['href'] = book['href'].replace('.csp', '.pdf').replace('/free/', '/free/files/')
                 book['title'] = re.sub('[^\\w\\s-]', '', book['title']).strip()
                 book['title'] = re.sub('[-\\s]+', '_', book['title'])
 
-                if section.has_attr('id'):
-                    location = dir + '\\' + section['id']
-                else:
-                    location = dir
+                location = directory + '\\' + section['id'] if section.has_attr('id') else directory
                 make_dir(location)
                 location += '\\' + book['title'] + '.pdf'
                 download_pdf(book['href'], location)
@@ -70,6 +68,7 @@ def main():
     path = sys.argv[1]
     make_dir(path)
     get_books(path)
+
 
 if __name__ == "__main__":
     main()
