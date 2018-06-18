@@ -12,15 +12,20 @@ def get_books():
         if response.status_code == 200:
             content = response.content
             soup = BeautifulSoup(content, "html.parser")
-            books = ["https://goalkicker.com/" + x for x in soup.findAll("div", {"class", "bookContainer grow"})["href"]]
+            return soup.findAll("div", {"class", "bookContainer grow"})]
     except Exception as e:
         print(str(e))
-    finally:
-        return books
+        
 
-
-def get_url(book):
-    return None
+def get_download(book_url):
+    try:
+        response = requests.get(book_url)
+        if response.status_code == 200:
+            content = response.content
+            soup = BeautifulSoup(content, "html.parser")
+            return book_url + soup.find(id="frontpage").find('a')["href"]
+    except Exception as e:
+        print(str(e))
 
 
 def make_dir(path):
@@ -48,8 +53,9 @@ def download_pdf(url, location):
 
 
 def main():
-    print(get_books())
-
+    lambda x: download_pdf(get_download("https://goalkicker.com/" + x.a["href"]), path + x.a["href"])
 
 if __name__ == "__main__":
     main()
+
+# ["https://goalkicker.com/" + x.a["href"] for x in soup.findAll("div", {"class", "bookContainer grow"})]
