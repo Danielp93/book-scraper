@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import errno
-import re
 import sys
+from multiprocessing.pool import ThreadPool
 
 
 def get_books():
@@ -12,7 +12,7 @@ def get_books():
         if response.status_code == 200:
             content = response.content
             soup = BeautifulSoup(content, "html.parser")
-            return soup.findAll("div", {"class", "bookContainer grow"})]
+            return ["https://goalkicker.com/" + x.a["href"] + "/" for x in soup.findAll("div", {"class", "bookContainer grow"})]
     except Exception as e:
         print(str(e))
         
@@ -23,7 +23,7 @@ def get_download(book_url):
         if response.status_code == 200:
             content = response.content
             soup = BeautifulSoup(content, "html.parser")
-            return book_url + soup.find(id="frontpage").find('a')["href"]
+            return soup.find(id="frontpage").a["href"]
     except Exception as e:
         print(str(e))
 
@@ -53,9 +53,10 @@ def download_pdf(url, location):
 
 
 def main():
-    lambda x: download_pdf(get_download("https://goalkicker.com/" + x.a["href"]), path + x.a["href"])
+    pool = ThreadPool(10)
+    tuples = pool.map(lambda x: (x, get_download(x)), get_books())
+    pool.starmap(lambda x, y: download_pdf(x + y, sys.argv[1] + y), tuples)
+
 
 if __name__ == "__main__":
     main()
-
-# ["https://goalkicker.com/" + x.a["href"] for x in soup.findAll("div", {"class", "bookContainer grow"})]
