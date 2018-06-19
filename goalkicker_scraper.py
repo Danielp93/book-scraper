@@ -53,6 +53,7 @@ def download_pdf(url, location):
 
 
 def main():
+    make_dir(sys.argv[1])
     pool = ThreadPool(10)
     tuples = pool.map(lambda x: (x, get_download(x)), get_books())
     pool.starmap(lambda x, y: download_pdf(x + y, sys.argv[1] + y), tuples)
