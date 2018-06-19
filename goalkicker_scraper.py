@@ -6,7 +6,7 @@ import sys
 from multiprocessing.pool import ThreadPool
 
 
-def get_books():
+def get_book_pages():
     try:
         response = requests.get("https://goalkicker.com/")
         if response.status_code == 200:
@@ -17,7 +17,7 @@ def get_books():
         print(str(e))
         
 
-def get_download(book_url):
+def get_book_name(book_url):
     try:
         response = requests.get(book_url)
         if response.status_code == 200:
@@ -55,7 +55,7 @@ def download_pdf(url, location):
 def main():
     make_dir(sys.argv[1])
     pool = ThreadPool(10)
-    tuples = pool.map(lambda x: (x, get_download(x)), get_books())
+    tuples = pool.map(lambda x: (x, get_book_name(x)), get_book_pages())
     pool.starmap(lambda x, y: download_pdf(x + y, sys.argv[1] + y), tuples)
 
 
