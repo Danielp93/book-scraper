@@ -1,0 +1,12 @@
+# copy this file to config.ini
+
+# Set packthub sessions token (if you have one).
+# Alternatively, set username and password
+
+[packt]
+# If you have a session token from your browser etc. You won't need authentication
+PACKT_SESSION_TOKEN =
+# If you don't have a session token, authenticate with username(is email) and password.
+# If password is blank, script will ask for one 
+PACKT_USERNAME =
+PACKT_PASSWORD =
