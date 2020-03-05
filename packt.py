@@ -42,11 +42,14 @@ async def get_book_info(s):
         print(str(e))
 
 async def get_book_pdf(s, book, location):
+    book_location = location / f'{book["name"]}.pdf'
+    if book_location.exists():
+        return
     try:
         async with s.get(f'https://services.packtpub.com/products-v1/products/{book["id"]}/files/pdf') as resp:
             book_location_url = (await resp.json())['data']
         async with s.get(book_location_url) as resp:
-            with (location / f'{book["name"]}.pdf').open('wb+') as handle:
+            with open(book_location, 'wb+') as handle:
                 async for (chunk, end) in resp.content.iter_chunks():
                     if end: 
                         break
