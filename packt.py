@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 from bs4 import BeautifulSoup
-import os
-import errno
+from getpass import getpass
+from pathlib import Path
 import sys
 import configparser
-from getpass import getpass
 import asyncio
 import aiohttp
 
-async def get_account_session():
+async def get_session_info():
     try: 
         config = configparser.ConfigParser()
         config.read('config.ini')
@@ -22,16 +21,15 @@ async def get_account_session():
                 'username': username,
                 'password': password 
             }
-            # Have to start with another ClientSession to get a token. Can't update a Clientsessions headers manually
-            async with aiohttp.ClientSession() as session:
-                async with session.post('https://services.packtpub.com/auth-v1/users/tokens', json=payload) as resp:
-                    token = (await resp.json())['data']['access']
+            async with aiohttp.request('POST', 'https://services.packtpub.com/auth-v1/users/tokens', json=payload) as resp:
+                token = (await resp.json())['data']['access']
         else:
             print("Please configure config.ini, see config.ini.example")
         
         cookies = ({ "access_token_live" : token })
         headers = ({ "authorization" : f'Bearer {token}' })
-        return cookies, headers 
+
+        return { 'cookies': cookies, 'headers': headers }
     except Exception as e:
         print(str(e))
 
@@ -43,25 +41,12 @@ async def get_book_info(s):
     except Exception as e:
         print(str(e))
 
-def make_dir(path):
-    try:
-        os.makedirs(path, exist_ok=True)
-    except TypeError:
-        try:
-            os.makedirs(path)
-        except OSError as exc:
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
-
-
 async def get_book_pdf(s, book, location):
     try:
         async with s.get(f'https://services.packtpub.com/products-v1/products/{book["id"]}/files/pdf') as resp:
             book_location_url = (await resp.json())['data']
         async with s.get(book_location_url) as resp:
-            with open(location + book['name'] + '.pdf', 'wb+') as handle:
+            with (location / f'{book["name"]}.pdf').open('wb+') as handle:
                 async for (chunk, end) in resp.content.iter_chunks():
                     if end: 
                         break
@@ -71,17 +56,14 @@ async def get_book_pdf(s, book, location):
 
 async def main():
     if len(sys.argv) > 1:
-        location = sys.argv[1]
+        location = Path(sys.argv[1])
         print(f'downloading books to {location}')
     else:
         print('No directory passed, will download to ./packt.d/{book}')
-        location = './packt.d'
-    location = location + "/"
-    make_dir(location)
-    
-    cookies, headers = await get_account_session()
+        location = Path('./packt.d')
+    location.mkdir(parents=True, exist_ok=True)
 
-    async with aiohttp.ClientSession(headers=headers, cookies=cookies) as s:
+    async with aiohttp.ClientSession(**(await get_session_info())) as s:
         books = await get_book_info(s)
         await asyncio.gather(*[get_book_pdf(s, book, location) for book in books])
 
